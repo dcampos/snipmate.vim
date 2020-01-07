@@ -3,11 +3,11 @@ if !exists('g:snipMate')
   let g:snipMate = {}
 endif
 
-try
-	call tlib#input#List('mi', '', [])
-catch /.*/
-	echoe "tlib is missing. See install instructions at ".expand('<sfile>:h:h').'/README.md'
-endtry
+" try
+" 	call tlib#input#List('mi', '', [])
+" catch /.*/
+" 	echoe "tlib is missing. See install instructions at ".expand('<sfile>:h:h').'/README.md'
+" endtry
 
 fun! Filename(...) abort
 	let filename = expand('%:t:r')
@@ -411,7 +411,7 @@ fun! snipMate#GetSnippets(scopes, trigger) abort
 	let result = {}
 
 	for F in values(g:snipMateSources)
-	  call funcref#Call(F, [a:scopes, a:trigger, result])
+	  call call(F, [a:scopes, a:trigger, result])
 	endfor
 	return result
 endf
@@ -437,7 +437,12 @@ function! snipMate#OpenSnippetFiles() abort
 					\       '"does not exist: " . v:val')
 	endfor
 	let all = exists + notexists
-	let select = tlib#input#List('mi', 'select files to be opened in splits', all)
+	try
+		let select = tlib#input#List('mi', 'select files to be opened in splits', all)
+	catch /^Vim\%((\a\+)\)\=:E117/
+		let select = [inputlist(['Selet a file to be opened in a split'] +
+					\ map(copy(all), 'v:key + 1 . ". " . v:val'))]
+	endtry
 	for idx in select
 		exec 'sp' all[idx - 1]
 	endfor
@@ -445,8 +450,12 @@ endfunction
 
 fun! snipMate#ScopesByFile() abort
 	" duplicates are removed in AddScopeAliases
-	return filter(funcref#Call(g:snipMate.get_scopes), "v:val != ''")
+	return filter(call(g:snipMate.get_scopes, []), "v:val != ''")
 endf
+
+function! snipMate#GetScopes() abort
+	return split(&ft,"\\.")+[&syntax, "_"]
+endfunction
 
 " used by both: completion and insert snippet
 fun! snipMate#GetSnippetsForWordBelowCursor(word, exact) abort
@@ -454,7 +463,7 @@ fun! snipMate#GetSnippetsForWordBelowCursor(word, exact) abort
 	" so 'foo.bar..baz' becomes ['foo', '.', 'bar', '.', '.', 'baz']
 	" First split just after a \W and then split each resultant string just
 	" before a \W
-	let parts = filter(tlib#list#Flatten(
+	let parts = filter(snipmate#util#flatten(
 				\ map(split(a:word, '\W\zs'), 'split(v:val, "\\ze\\W")')),
 				\ '!empty(v:val)')
 	" Only look at the last few possibilities. Too many can be slow.
@@ -480,7 +489,7 @@ fun! snipMate#GetSnippetsForWordBelowCursor(word, exact) abort
 	" prefer longest word
 	for word in lookups
 		let g:snipMate.word = word
-		for [k,snippetD] in items(funcref#Call(g:snipMate['get_snippets'], [snipMate#ScopesByFile(), word]))
+		for [k,snippetD] in items(call(g:snipMate['get_snippets'], [snipMate#ScopesByFile(), word]))
 			" hack: require exact match
 			if a:exact && k !=# word
 				continue
@@ -508,14 +517,19 @@ fun! s:ChooseSnippet(snippets) abort
 		" there's only a single snippet, choose it
 		let idx = 0
 	else
-		let idx = tlib#input#List('si','select snippet by name',snippet) -1
+		try
+			let idx = tlib#input#List('si','select snippet by name',snippet) -1
+		catch /^Vim\%((\a\+)\)\=:E117/
+			let idx = inputlist(['select snippet by name'] + snippet) -1
+		endtry
 		if idx == -1
 			return ''
 		endif
 	endif
 	" if a:snippets[..] is a String Call returns it
 	" If it's a function or a function string the result is returned
-	return funcref#Call(a:snippets[keys(a:snippets)[idx]])
+	let result = a:snippets[keys(a:snippets)[idx]]
+	return type(result) == v:t_func ? call(result) : result
 endf
 
 fun! snipMate#WordBelowCursor() abort
