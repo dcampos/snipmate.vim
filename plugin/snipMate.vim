@@ -16,16 +16,16 @@ let loaded_snips = 1
 let s:save_cpo = &cpo
 set cpo&vim
 
-try
-	call funcref#Function('')
-catch /.*/
-	echoe "you're missing vim-addon-mw-utils. See install instructions at ".expand('<sfile>:h:h').'/README.md'
-endtry
+" try
+" 	call funcref#Function('')
+" catch /.*/
+" 	echoe "you're missing vim-addon-mw-utils. See install instructions at ".expand('<sfile>:h:h').'/README.md'
+" endtry
 
 if (!exists('g:snipMateSources'))
   let g:snipMateSources = {}
   " Default source: get snippets based on runtimepath
-  let g:snipMateSources['default'] = funcref#Function('snipMate#DefaultPool')
+  let g:snipMateSources['default'] = function('snipMate#DefaultPool')
 endif
 
 augroup SnipMateDetect
@@ -90,7 +90,7 @@ if (!exists('g:snipMate_no_default_aliases') || !g:snipMate_no_default_aliases)
 				\ get(g:snipMate.scope_aliases, 'less', 'css')
 endif
 
-let g:snipMate['get_snippets'] = get(g:snipMate, 'get_snippets', funcref#Function("snipMate#GetSnippets"))
+let g:snipMate['get_snippets'] = get(g:snipMate, 'get_snippets', function("snipMate#GetSnippets"))
 
 " List of paths where snippets/ dirs are located
 if exists('g:snipMate.snippet_dirs') && type(g:snipMate['snippet_dirs']) != type([])
@@ -102,7 +102,7 @@ endif
 " _ is default scope added always
 "
 " &ft honors multiple filetypes and syntax such as in set ft=html.javascript syntax=FOO
-let g:snipMate['get_scopes'] = get(g:snipMate, 'get_scopes', funcref#Function('return split(&ft,"\\.")+[&syntax, "_"]'))
+let g:snipMate['get_scopes'] = get(g:snipMate, 'get_scopes', function("snipMate#GetScopes"))
 
 " Modified from Luc Hermitte's function on StackOverflow
 " <http://stackoverflow.com/a/1534347>

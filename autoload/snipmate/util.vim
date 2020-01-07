@@ -28,3 +28,17 @@ function! snipmate#util#tabwidth()
         return exists('*shiftwidth') ? shiftwidth() : &sw
     endif
 endfunction
+
+" Taken from tlib#list#Flatten()
+function! snipmate#util#flatten(list) abort
+    let acc = []
+    for e in a:list
+        if type(e) == 3
+            let acc += snipmate#util#flatten(e)
+        else
+            call add(acc, e)
+        endif
+        unlet e
+    endfor
+    return acc
+endf
