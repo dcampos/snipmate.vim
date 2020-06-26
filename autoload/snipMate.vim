@@ -425,6 +425,7 @@ function! snipMate#OpenSnippetFiles() abort
 	let scopes_done = []
 	let exists = []
 	let notexists = []
+	let all = []
 	for scope in s:AddScopeAliases(snipMate#ScopesByFile())
 		let files += s:snippet_filenames(scope, '')
 	endfor
@@ -435,13 +436,15 @@ function! snipMate#OpenSnippetFiles() abort
 		let notexists += map(filter(copy(fullpaths),
 					\ 'v:val =~# "\.snippets" && !filereadable(v:val)'),
 					\       '"does not exist: " . v:val')
+		let all += fullpaths
 	endfor
-	let all = exists + notexists
+	" let all = exists + notexists
+	let all_input = map(copy(all), '!filereadable(v:val) ? "does not exist: " . v:val : v:val')
 	try
 		let select = tlib#input#List('mi', 'select files to be opened in splits', all)
 	catch /^Vim\%((\a\+)\)\=:E117/
 		let select = [inputlist(['Selet a file to be opened in a split'] +
-					\ map(copy(all), 'v:key + 1 . ". " . v:val'))]
+					\ map(copy(all_input), 'v:key + 1 . ". " . v:val'))]
 	endtry
 	for idx in select
 		exec 'sp' all[idx - 1]
